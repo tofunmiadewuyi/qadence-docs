@@ -1,0 +1,199 @@
+---
+title: "Make Your First Check API Call"
+sidebarTitle: "First API Call"
+description: "Follow this step-by-step walkthrough to authenticate, create a check, and retrieve results using the Check REST API."
+---
+
+This guide walks you through making your first API call to Check — from configuring your environment and authenticating your requests, to creating a check and viewing its results. By the end, you'll have a working request flow you can build on.
+
+<Steps>
+  <Step title="Set Up Your Environment">
+    You need a REST client to interact with the Check API. The examples in this guide use **curl**, which is available on macOS, Linux, and Windows (via WSL or Git Bash). You can also use any HTTP client such as [Postman](https://www.postman.com/) or [Insomnia](https://insomnia.rest/).
+
+    To avoid repeating your API key in every command, export it as an environment variable in your terminal session:
+
+    ```bash
+    export CHECK_API_KEY=ck_live_xxxx
+    ```
+
+    Replace `ck_live_xxxx` with your actual API key from the [Check dashboard](https://dashboard.wearecheck.com). All subsequent examples reference `$CHECK_API_KEY` so you only need to set this once.
+  </Step>
+
+  <Step title="List Your Checks">
+    Before creating anything, verify your credentials work by listing your existing checks. Send a `GET` request to `/checks`:
+
+    <CodeGroup>
+      ```bash curl
+      curl -i https://api.wearecheck.com/v1/checks \
+        -H "Authorization: Bearer $CHECK_API_KEY"
+      ```
+
+      ```python Python
+      import requests
+
+      response = requests.get(
+          "https://api.wearecheck.com/v1/checks",
+          headers={"Authorization": f"Bearer {CHECK_API_KEY}"}
+      )
+      print(response.json())
+      ```
+    </CodeGroup>
+
+    A successful response returns `200 OK` with a list of your checks:
+
+    ```json
+    {
+      "data": [
+        {
+          "id": "chk_01HABC123",
+          "name": "Contractor Verification",
+          "type": "background",
+          "status": "active",
+          "created_at": "2024-01-10T09:00:00Z"
+        }
+      ],
+      "meta": {
+        "total": 1,
+        "page": 1
+      }
+    }
+    ```
+
+    If the list is empty, that's fine — you'll create your first check in the next step.
+  </Step>
+
+  <Step title="Create a Check">
+    Create a new check by sending a `POST` request to `/checks` with a JSON body specifying the check's name and type:
+
+    <CodeGroup>
+      ```bash curl
+      curl -X POST https://api.wearecheck.com/v1/checks \
+        -H "Authorization: Bearer $CHECK_API_KEY" \
+        -H "Content-Type: application/json" \
+        -d '{
+          "name": "Employee Background Check",
+          "type": "background"
+        }'
+      ```
+
+      ```python Python
+      import requests
+
+      response = requests.post(
+          "https://api.wearecheck.com/v1/checks",
+          headers={
+              "Authorization": f"Bearer {CHECK_API_KEY}",
+              "Content-Type": "application/json"
+          },
+          json={
+              "name": "Employee Background Check",
+              "type": "background"
+          }
+      )
+      print(response.json())
+      ```
+    </CodeGroup>
+
+    A successful creation returns `201 Created` with the new check object:
+
+    ```json
+    {
+      "data": {
+        "id": "chk_01HABC456",
+        "name": "Employee Background Check",
+        "type": "background",
+        "status": "active",
+        "created_at": "2024-01-15T14:22:00Z"
+      }
+    }
+    ```
+
+    Copy the `id` value — you'll use `chk_01HABC456` in the next two steps.
+  </Step>
+
+  <Step title="Retrieve the Check">
+    Fetch the check you just created by its ID using `GET /checks/{id}`:
+
+    <CodeGroup>
+      ```bash curl
+      curl https://api.wearecheck.com/v1/checks/chk_01HABC456 \
+        -H "Authorization: Bearer $CHECK_API_KEY"
+      ```
+
+      ```python Python
+      import requests
+
+      check_id = "chk_01HABC456"
+
+      response = requests.get(
+          f"https://api.wearecheck.com/v1/checks/{check_id}",
+          headers={"Authorization": f"Bearer {CHECK_API_KEY}"}
+      )
+      print(response.json())
+      ```
+    </CodeGroup>
+
+    The response returns the full check object:
+
+    ```json
+    {
+      "data": {
+        "id": "chk_01HABC456",
+        "name": "Employee Background Check",
+        "type": "background",
+        "status": "active",
+        "created_at": "2024-01-15T14:22:00Z"
+      }
+    }
+    ```
+  </Step>
+
+  <Step title="View Results">
+    Once a check has been processed, retrieve its results by querying `/results` and filtering by your check's ID:
+
+    <CodeGroup>
+      ```bash curl
+      curl "https://api.wearecheck.com/v1/results?check_id=chk_01HABC456" \
+        -H "Authorization: Bearer $CHECK_API_KEY"
+      ```
+
+      ```python Python
+      import requests
+
+      check_id = "chk_01HABC456"
+
+      response = requests.get(
+          "https://api.wearecheck.com/v1/results",
+          headers={"Authorization": f"Bearer {CHECK_API_KEY}"},
+          params={"check_id": check_id}
+      )
+      print(response.json())
+      ```
+    </CodeGroup>
+
+    A response with results looks like this:
+
+    ```json
+    {
+      "data": [
+        {
+          "id": "res_01HXYZ789",
+          "check_id": "chk_01HABC456",
+          "status": "pass",
+          "created_at": "2024-01-15T14:58:00Z"
+        }
+      ],
+      "meta": {
+        "total": 1,
+        "page": 1
+      }
+    }
+    ```
+
+    Results may not appear immediately — checks are processed asynchronously. If the list is empty, wait a moment and retry, or set up [webhooks](/guides/webhooks) to be notified the instant a result is ready.
+  </Step>
+</Steps>
+
+<Tip>
+  You've completed the core Check API request flow. Explore the full **API Reference** for every available endpoint, request parameter, and response schema — including filtering, pagination, and error codes.
+</Tip>

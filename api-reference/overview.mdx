@@ -1,0 +1,66 @@
+---
+title: "Check REST API Reference Overview"
+sidebarTitle: "Overview"
+description: "Explore the Check REST API — manage checks, retrieve results, and register webhooks using standard HTTP requests and JSON."
+---
+
+The Check REST API gives you programmatic access to the full suite of Check platform capabilities. This reference covers every available endpoint, explains how authentication works, and shows how to manage checks, retrieve results, and register webhooks — everything you need to integrate Check into your own product or workflow.
+
+## Base URL
+
+All API requests are made to the following base URL:
+
+```
+https://api.wearecheck.com/v1
+```
+
+Append the resource path to this base URL to form a complete endpoint. For example, to list all checks:
+
+```
+GET https://api.wearecheck.com/v1/checks
+```
+
+## Authentication
+
+Every request to the Check API must include a valid API key as a Bearer token in the `Authorization` header:
+
+```
+Authorization: Bearer YOUR_API_KEY
+```
+
+For full details on key types, test vs. live environments, and authentication error codes, see the [Authentication reference](/api-reference/authentication).
+
+## Content Type
+
+For any request that includes a body (such as `POST` requests), set the `Content-Type` header to:
+
+```
+Content-Type: application/json
+```
+
+Requests that do not include a body (such as `GET` and `DELETE`) do not require this header.
+
+## Versioning
+
+The API is versioned via the URL path. The current version is **v1**, reflected in the base URL (`/v1`). When breaking changes are introduced, they will be released under a new version (e.g., `/v2`) with advance notice so you have time to migrate. Non-breaking additions — such as new optional fields or new endpoints — may be added to an existing version at any time.
+
+## Available Resources
+
+<CardGroup cols={2}>
+  <Card title="Checks" icon="check" href="/api-reference/endpoints/checks">
+    Create and manage check definitions used to run verifications.
+  </Card>
+  <Card title="Results" icon="list" href="/api-reference/endpoints/results">
+    Retrieve the outcomes of checks that have been run.
+  </Card>
+  <Card title="Webhooks" icon="webhook" href="/api-reference/endpoints/webhooks">
+    Register endpoints to receive real-time event notifications.
+  </Card>
+  <Card title="Authentication" icon="key" href="/api-reference/authentication">
+    Understand API keys, environments, and auth error codes.
+  </Card>
+</CardGroup>
+
+## SDKs & Tools
+
+Official SDKs for popular languages are coming soon. In the meantime, the Check API works with any standard HTTP client — including `curl`, `fetch`, `axios`, `requests`, or any library that can send HTTP requests and handle JSON responses. All examples throughout this reference use `curl` so you can run them directly from your terminal.

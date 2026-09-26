@@ -1,0 +1,140 @@
+---
+title: "Receive Real-Time Events with Check Webhooks"
+sidebarTitle: "Webhooks"
+description: "Configure Check webhooks to receive instant HTTP notifications when check results are ready or check statuses change in your account."
+---
+
+Webhooks let Check notify your server in real time rather than requiring you to poll the API for updates. When a significant event occurs — such as a result completing or a check status changing — Check sends an HTTP POST request to your registered endpoint URL with a JSON payload describing the event. This guide covers registering endpoints, understanding the payload format, verifying signatures, and managing your webhook configuration.
+
+## How Webhooks Work
+
+When an event occurs in Check, the platform:
+
+1. Constructs a JSON payload describing the event and the affected resource.
+2. Signs the payload using HMAC-SHA256 with your webhook secret.
+3. Sends an HTTP `POST` request to your registered endpoint URL.
+4. Expects a `2xx` HTTP response from your server within **10 seconds**.
+5. Retries the delivery if your server is unreachable or returns a non-`2xx` response.
+
+Your endpoint must be publicly accessible over HTTPS. Check does not deliver webhooks to `localhost` or private network addresses.
+
+## Supported Events
+
+Check emits the following events:
+
+| Event | Description |
+|---|---|
+| `check.created` | A new check was created |
+| `check.updated` | A check status changed |
+| `result.created` | A new result was produced for a check |
+| `result.completed` | A result status changed to pass or fail |
+
+You can subscribe to any combination of these events when registering a webhook endpoint.
+
+## Registering a Webhook
+
+Send a `POST` request to `/webhooks` with your endpoint URL and the list of events you want to receive:
+
+```bash curl
+curl -X POST https://api.wearecheck.com/v1/webhooks \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://yourapp.com/webhooks/check",
+    "events": ["result.completed", "check.updated"]
+  }'
+```
+
+A successful registration returns `201 Created`:
+
+```json
+{
+  "data": {
+    "id": "wh_01HDEF012",
+    "url": "https://yourapp.com/webhooks/check",
+    "events": ["result.completed", "check.updated"],
+    "secret": "whsec_xxxxxxxxxxxxxxxxxxxxxxxx",
+    "created_at": "2024-01-15T14:00:00Z"
+  }
+}
+```
+
+Store the `secret` value securely — Check displays it only once at registration time. You'll use it to verify incoming payloads.
+
+## Webhook Payload
+
+Every webhook delivery is an HTTP `POST` request with a `Content-Type: application/json` body. Here is an example payload for a `result.completed` event:
+
+```json
+{
+  "event": "result.completed",
+  "created_at": "2024-01-15T15:00:00Z",
+  "data": {
+    "id": "res_01HXYZ789",
+    "check_id": "chk_01HABC456",
+    "status": "pass",
+    "created_at": "2024-01-15T14:58:00Z"
+  }
+}
+```
+
+The top-level `event` field identifies the event type. The `data` object contains the full resource that triggered the event — in this case a result object. The `created_at` timestamp at the top level records when Check dispatched the event.
+
+## Verifying Webhook Signatures
+
+Check signs every webhook payload and includes the signature in the `X-Check-Signature` request header. Always verify this signature before processing the payload to confirm the request genuinely came from Check.
+
+<Warning>
+  Always verify webhook signatures in production. Skipping signature verification exposes your endpoint to spoofed requests that could trigger unintended actions in your application.
+</Warning>
+
+Check generates the signature by computing an HMAC-SHA256 digest of the raw request body using your webhook secret. Use the following pattern to verify it in your handler:
+
+```python Python
+import hmac
+import hashlib
+
+def verify_webhook(payload_body: bytes, signature_header: str, secret: str) -> bool:
+    expected = hmac.new(
+        secret.encode(),
+        payload_body,
+        hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(expected, signature_header)
+```
+
+Pass the **raw bytes** of the request body — not a parsed JSON object — to `verify_webhook`. Parsing and re-serializing JSON can alter whitespace or key ordering, which changes the digest and causes legitimate requests to fail verification.
+
+## Responding to Webhooks
+
+Your endpoint must return any `2xx` HTTP status code (such as `200 OK` or `204 No Content`) within **10 seconds** of receiving the request. If your handler needs to perform time-consuming work, acknowledge the request immediately and process the payload asynchronously in a background job.
+
+If Check does not receive a `2xx` response within the timeout — or if your server is unreachable — it retries the delivery up to **5 times** using exponential backoff:
+
+| Attempt | Delay |
+|---|---|
+| 1st retry | 1 minute |
+| 2nd retry | 5 minutes |
+| 3rd retry | 30 minutes |
+| 4th retry | 2 hours |
+| 5th retry | 8 hours |
+
+After 5 failed attempts, Check marks the delivery as permanently failed and stops retrying.
+
+## Managing Webhooks
+
+List all registered webhook endpoints on your account:
+
+```bash
+curl https://api.wearecheck.com/v1/webhooks \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+Remove a webhook endpoint by its ID:
+
+```bash
+curl -X DELETE https://api.wearecheck.com/v1/webhooks/wh_01HDEF012 \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+A successful deletion returns `200 OK`. Check stops sending events to a deleted endpoint immediately.

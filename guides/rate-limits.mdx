@@ -1,0 +1,95 @@
+---
+title: "Check API Rate Limits and Throttling"
+sidebarTitle: "Rate Limits"
+description: "Understand Check API rate limits by tier, read response headers to track usage, and handle 429 errors gracefully in your integration."
+---
+
+The Check API enforces rate limits to ensure fair usage and maintain platform stability for all integrators. Every request you make counts against the limit for your account tier, and the API communicates your current usage in response headers so you can adapt in real time. This guide explains the default limits for each tier, how to read the rate limit headers, and how to handle throttling errors without disrupting your integration.
+
+## Default Limits
+
+Your rate limit depends on the plan your account is on:
+
+| Tier | Requests per minute | Requests per day |
+|---|---|---|
+| Starter | 60 | 10,000 |
+| Growth | 300 | 100,000 |
+| Enterprise | Custom | Custom |
+
+Both limits apply simultaneously — your requests are throttled as soon as you hit either the per-minute or per-day ceiling. Enterprise customers can negotiate custom limits to match their workload. Contact [support@wearecheck.com](mailto:support@wearecheck.com) to discuss your requirements.
+
+## Rate Limit Headers
+
+Check includes rate limit information in the headers of **every API response**, whether the request succeeds or fails. Use these headers to monitor your usage and back off before you hit the ceiling:
+
+| Header | Description |
+|---|---|
+| `X-RateLimit-Limit` | Your maximum allowed requests per minute |
+| `X-RateLimit-Remaining` | Requests remaining in the current one-minute window |
+| `X-RateLimit-Reset` | Unix timestamp (seconds) when the current window resets |
+
+To inspect headers alongside the response body, use the `-i` flag with curl:
+
+```bash
+curl -i https://api.wearecheck.com/v1/checks \
+  -H "Authorization: Bearer $CHECK_API_KEY"
+```
+
+The response includes headers like this before the JSON body:
+
+```
+HTTP/2 200
+content-type: application/json
+x-ratelimit-limit: 60
+x-ratelimit-remaining: 43
+x-ratelimit-reset: 1705329780
+...
+```
+
+In this example, you have 43 requests left before the window resets at Unix timestamp `1705329780`. When `X-RateLimit-Remaining` reaches `0`, the next request returns `429 Too Many Requests`.
+
+## Handling 429 Errors
+
+When you exceed your rate limit, the API returns `429 Too Many Requests`. The response includes the same rate limit headers so you know exactly when the window resets. Wait until the `X-RateLimit-Reset` timestamp has passed, then retry your request.
+
+The following Python helper wraps `GET` requests with automatic retry logic based on the reset timestamp:
+
+```python Python
+import time
+import requests
+
+def get_with_retry(url, headers, max_retries=3):
+    for attempt in range(max_retries):
+        response = requests.get(url, headers=headers)
+        if response.status_code == 429:
+            reset_time = int(response.headers.get("X-RateLimit-Reset", time.time() + 60))
+            wait = max(reset_time - time.time(), 1)
+            time.sleep(wait)
+            continue
+        return response
+    raise Exception("Max retries exceeded")
+```
+
+This function reads the `X-RateLimit-Reset` header to calculate exactly how long to wait rather than using a fixed sleep interval, which minimizes unnecessary delay. If the header is absent, it falls back to a 60-second wait. After `max_retries` attempts it raises an exception so the failure is visible to your application.
+
+<Tip>
+  Polling the API in a tight loop is the most common cause of hitting rate limits. Use [webhooks](/guides/webhooks) to receive push notifications when check results are ready — this can eliminate the need to poll `/results` entirely and drastically reduce your request volume.
+</Tip>
+
+## Best Practices
+
+<Accordion title="Cache responses when possible">
+  Many Check resources — such as check details retrieved with `GET /checks/{id}` — don't change frequently. Store the response locally and serve it from your cache for repeat reads. Refresh the cache when you receive a `check.updated` webhook event rather than re-fetching on every page load or request.
+</Accordion>
+
+<Accordion title="Use webhooks instead of polling">
+  Repeatedly calling `GET /results` to check whether a result has arrived consumes your rate limit quota quickly, especially at scale. Register a webhook for the `result.completed` event and let Check push the notification to you the moment a result is ready. See the [Webhooks guide](/guides/webhooks) to get started.
+</Accordion>
+
+<Accordion title="Batch requests where supported">
+  When retrieving multiple resources, use list endpoints (`GET /checks`, `GET /results`) with filtering and pagination parameters rather than making individual `GET /checks/{id}` calls in a loop. A single paginated list request returns up to 100 items and counts as one request against your limit.
+</Accordion>
+
+<Accordion title="Contact support to upgrade your limits">
+  If your integration consistently approaches the per-minute or per-day ceiling on your current plan, upgrading to a higher tier or negotiating a custom Enterprise limit is the right long-term solution. Reach out to [support@wearecheck.com](mailto:support@wearecheck.com) with your usage patterns and we'll recommend the best fit.
+</Accordion>

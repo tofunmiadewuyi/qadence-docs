@@ -1,0 +1,133 @@
+---
+title: "Paginate Through Check API List Responses"
+sidebarTitle: "Pagination"
+description: "All Check API list endpoints use page-based pagination — learn the query parameters, meta fields, and patterns for iterating through large datasets."
+---
+
+Every list endpoint in the Check API — including `GET /checks` and `GET /results` — returns results in pages rather than all at once. This keeps individual responses fast and predictable regardless of how many records your account has accumulated. This page explains the available pagination parameters, the `meta` block returned with every list response, and ready-to-run examples for iterating through an entire dataset.
+
+## Pagination Parameters
+
+Pass these query parameters on any list request to control which page of results you receive:
+
+<ParamField path="page" type="integer">
+  The page number to retrieve. Starts at `1`. Defaults to `1` if omitted.
+</ParamField>
+
+<ParamField path="per_page" type="integer">
+  The number of results to return per page. Defaults to `20`. Maximum allowed value is `100`.
+</ParamField>
+
+**Example request — fetch the second page with 50 results per page:**
+
+```bash
+GET https://api.wearecheck.com/v1/checks?page=2&per_page=50
+```
+
+## Response Meta
+
+Every list response includes a `meta` object alongside the `data` array. Use these fields to understand where you are in the full dataset and whether further pages exist:
+
+```json
+{
+  "meta": {
+    "page": 1,
+    "per_page": 20,
+    "total": 143,
+    "total_pages": 8
+  }
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `meta.page` | integer | The current page number |
+| `meta.per_page` | integer | The number of results returned on this page |
+| `meta.total` | integer | Total number of matching records across all pages |
+| `meta.total_pages` | integer | Total number of pages given the current `per_page` value |
+
+<Note>
+Use `meta.total_pages` to determine whether more pages exist. When `meta.page >= meta.total_pages`, you have received the last page. Use `meta.total` if you need to display a record count to your users.
+</Note>
+
+## Iterating Through Pages
+
+### cURL — Fetch a specific page
+
+```bash cURL
+# Page 1
+curl --request GET \
+  --url "https://api.wearecheck.com/v1/checks?page=1&per_page=20" \
+  --header "Authorization: Bearer YOUR_API_KEY"
+
+# Page 2
+curl --request GET \
+  --url "https://api.wearecheck.com/v1/checks?page=2&per_page=20" \
+  --header "Authorization: Bearer YOUR_API_KEY"
+```
+
+### Python — Collect all records across pages
+
+The loop below fetches every Check in your account by incrementing the `page` parameter until `meta.total_pages` is reached:
+
+```python
+import requests
+
+base_url = "https://api.wearecheck.com/v1/checks"
+headers = {"Authorization": "Bearer YOUR_API_KEY"}
+
+page = 1
+all_checks = []
+
+while True:
+    resp = requests.get(base_url, headers=headers, params={"page": page, "per_page": 100})
+    body = resp.json()
+    all_checks.extend(body["data"])
+    if page >= body["meta"]["total_pages"]:
+        break
+    page += 1
+
+print(f"Fetched {len(all_checks)} checks across {page} page(s).")
+```
+
+### Node.js — Collect all records across pages
+
+```javascript
+const API_KEY = "YOUR_API_KEY";
+const BASE_URL = "https://api.wearecheck.com/v1/checks";
+
+async function fetchAllChecks() {
+  let page = 1;
+  const allChecks = [];
+
+  while (true) {
+    const url = `${BASE_URL}?page=${page}&per_page=100`;
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${API_KEY}` },
+    });
+
+    const body = await response.json();
+    allChecks.push(...body.data);
+
+    if (page >= body.meta.total_pages) break;
+    page++;
+  }
+
+  console.log(`Fetched ${allChecks.length} checks.`);
+  return allChecks;
+}
+
+fetchAllChecks();
+```
+
+## Tips for Large Datasets
+
+<Accordion title="How do I paginate efficiently over a large number of results?">
+Set `per_page=100` (the maximum) to minimise the number of round trips needed to retrieve a full dataset. For example, 1,000 records requires only 10 requests at `per_page=100` versus 50 requests at the default of `per_page=20`.
+
+If you only need a subset of records, stop iterating as soon as your filter condition is met rather than fetching all pages.
+</Accordion>
+
+<Accordion title="What happens if new records are created while I'm paginating?">
+Page-based pagination reflects the state of the dataset at the time of each individual request. If new Checks are created between page requests, they may appear on a page you have already fetched or shift records onto the next page. For use cases that require a stable snapshot, retrieve all pages as quickly as possible or record the IDs you have already processed to detect duplicates.
+</Accordion>

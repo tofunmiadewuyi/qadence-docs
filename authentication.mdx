@@ -1,0 +1,132 @@
+---
+title: "Authenticate Requests to the Check API"
+sidebarTitle: "Authentication"
+description: "Check uses API key Bearer tokens for all requests. Learn how to get your key, use it securely, and handle authentication errors."
+---
+
+Every request to the Check API must be authenticated using an API key passed as a Bearer token in the `Authorization` header. This page covers how to generate your key, attach it correctly to requests across different languages, apply best practices for keeping it secure, and interpret authentication error responses.
+
+## Getting Your API Key
+
+API keys are generated from the Check dashboard. Each key is tied to your account and carries the permissions you assign to it at creation time.
+
+<Steps>
+  <Step title="Log in to the Check dashboard">
+    Go to [wearecheck.com](https://wearecheck.com) and sign in with your credentials.
+  </Step>
+  <Step title="Navigate to API Keys">
+    In the left sidebar, click **Settings**, then select **API Keys**.
+  </Step>
+  <Step title="Generate a new key">
+    Click **Generate New Key**. Give it a descriptive name that identifies the integration or environment it belongs to (for example, `production-crm` or `staging-test`). Click **Create**.
+  </Step>
+  <Step title="Copy your key immediately">
+    Your new API key is displayed only once. Copy it and store it in a secure location — you cannot retrieve it again after closing the dialog. If you lose it, you'll need to generate a replacement.
+  </Step>
+</Steps>
+
+## Using Your API Key
+
+Include your API key in the `Authorization` header of every HTTP request using the `Bearer` scheme:
+
+```
+Authorization: Bearer YOUR_API_KEY
+```
+
+The examples below show how to attach this header in the most common HTTP clients.
+
+<CodeGroup>
+
+```bash curl
+curl https://api.wearecheck.com/v1/checks \
+  -H "Authorization: Bearer ck_live_xxxxxxxxxxxxxxxxxxxx"
+```
+
+```python Python
+import requests
+
+response = requests.get(
+    "https://api.wearecheck.com/v1/checks",
+    headers={"Authorization": "Bearer ck_live_xxxxxxxxxxxxxxxxxxxx"}
+)
+
+data = response.json()
+```
+
+```javascript Node.js
+const response = await fetch("https://api.wearecheck.com/v1/checks", {
+  headers: {
+    "Authorization": "Bearer ck_live_xxxxxxxxxxxxxxxxxxxx"
+  }
+});
+
+const data = await response.json();
+```
+
+</CodeGroup>
+
+<Note>
+  All requests must be made over **HTTPS**. Requests sent over plain HTTP will be rejected.
+</Note>
+
+## Keeping Keys Secure
+
+API keys grant access to your Check data and integration. Treat them with the same care as passwords.
+
+<Warning>
+  Never hardcode your API key directly in source code. If you commit a key to a public repository, it can be scraped by automated bots within seconds — revoke it immediately and generate a replacement.
+</Warning>
+
+Follow these best practices to minimise the risk of accidental exposure:
+
+- **Use environment variables** — read your key from `process.env.CHECK_API_KEY` (Node.js), `os.environ["CHECK_API_KEY"]` (Python), or your platform's equivalent secret injection mechanism.
+- **Use a secrets manager** — for production workloads, store keys in AWS Secrets Manager, GCP Secret Manager, HashiCorp Vault, or a similar service rather than in `.env` files.
+- **Add `.env` to `.gitignore`** — prevent local secret files from being committed accidentally.
+- **Rotate keys regularly** — generate new keys on a schedule (e.g. every 90 days) and revoke old ones after confirming the new key is working.
+- **Use separate keys per environment** — maintain distinct keys for development, staging, and production so a compromised test key cannot affect live data.
+
+## API Key Permissions
+
+Keys can be scoped to limit what actions they can perform. When you generate a key, you can choose from the following permission levels:
+
+| Permission level | Allowed actions |
+|---|---|
+| **Read-only** | `GET` requests only — list and retrieve checks and results |
+| **Full access** | All `GET`, `POST`, and `DELETE` requests, including creating checks and managing webhooks |
+
+Prefer read-only keys for integrations that only need to query data. Reserve full-access keys for services that must create or modify resources.
+
+## Authentication Errors
+
+If a request fails due to an authentication problem, the API returns one of the following HTTP status codes:
+
+| Status code | Meaning | Common causes |
+|---|---|---|
+| `401 Unauthorized` | The request could not be authenticated | Missing `Authorization` header, malformed Bearer token, or revoked API key |
+| `403 Forbidden` | The key is valid but lacks permission | Using a read-only key to create a resource, or accessing a resource outside your account's scope |
+
+A `401` response body looks like this:
+
+```json
+{
+  "error": {
+    "code": "unauthorized",
+    "message": "Invalid or missing API key."
+  }
+}
+```
+
+A `403` response body looks like this:
+
+```json
+{
+  "error": {
+    "code": "forbidden",
+    "message": "Your API key does not have permission to perform this action."
+  }
+}
+```
+
+<Note>
+  If you believe your API key has been compromised, revoke it immediately from **Settings → API Keys** in the dashboard and generate a replacement. If you need assistance, contact Check support at [support@wearecheck.com](mailto:support@wearecheck.com).
+</Note>

@@ -1,0 +1,125 @@
+---
+title: "Check API: Core Concepts and Data Model"
+sidebarTitle: "Overview"
+description: "Learn the core building blocks of the Check API — resources, data model, request format, and how async results are delivered."
+---
+
+Before you write your first API call, it helps to understand how the Check platform is structured. This page walks you through the fundamental concepts that underpin every integration: the two core resources (Checks and Results), how requests and responses are shaped, and how webhooks fit into the async flow. Bookmark this page — you'll return to it as your integration grows.
+
+## Base URL
+
+Every Check API endpoint is versioned and relative to a single base URL:
+
+```
+https://api.wearecheck.com/v1
+```
+
+All paths documented in this guide are relative to this base. For example, `GET /checks` means:
+
+```
+GET https://api.wearecheck.com/v1/checks
+```
+
+Versioning is encoded in the URL path. When breaking changes are introduced, a new version (`/v2`, etc.) is released and the previous version is maintained during a deprecation window.
+
+## Data Model
+
+The Check API is built around two primary resources: **Checks** and **Results**.
+
+### Checks
+
+A **Check** represents a check definition — a configured task such as an identity verification or background screening. You create a Check to describe *what* should be run and against *whom*. Checks are reusable definitions that can produce one or many Results over time.
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | string | Unique identifier for the check (e.g., `chk_01HXYZ123`) |
+| `name` | string | Human-readable label for the check |
+| `status` | string | Current lifecycle state: `active`, `inactive`, or `archived` |
+| `type` | string | The kind of check: e.g., `identity_verification`, `background_check` |
+| `created_at` | string | ISO 8601 UTC timestamp of when the check was created |
+| `updated_at` | string | ISO 8601 UTC timestamp of the last update |
+
+### Results
+
+A **Result** is the outcome produced when a Check is executed. Each Result is linked back to its parent Check via `check_id` and carries the structured output of the verification or screening process.
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | string | Unique identifier for the result (e.g., `res_01HABC456`) |
+| `check_id` | string | The ID of the Check that produced this result |
+| `status` | string | Outcome: `pending`, `pass`, or `fail` |
+| `data` | object | The structured payload returned by the check (varies by check type) |
+| `created_at` | string | ISO 8601 UTC timestamp of when the result was created |
+
+<Note>
+Results with a `status` of `pending` are still being processed. Use [webhooks](/guides/webhooks) to receive a notification the moment a Result transitions to `pass` or `fail`, rather than polling the API.
+</Note>
+
+## Request Format
+
+All requests to the Check API must:
+
+- Use HTTPS
+- Include an `Authorization: Bearer YOUR_API_KEY` header
+- Use `Content-Type: application/json` for any request that sends a body (POST, PATCH)
+- Send a valid JSON body when required
+
+See [Requests & Responses](/concepts/requests-responses) for full details on headers, methods, and body structure.
+
+## Response Format
+
+Every API response is a JSON object. Single-resource responses wrap the payload in a top-level `data` key:
+
+```json
+{
+  "data": {
+    "id": "chk_01HXYZ123",
+    "name": "Identity Verification",
+    "status": "active",
+    "type": "identity_verification",
+    "created_at": "2024-01-15T10:30:00Z",
+    "updated_at": "2024-01-15T10:30:00Z"
+  }
+}
+```
+
+List responses include the same `data` array alongside a `meta` object that carries pagination metadata:
+
+```json
+{
+  "data": [ /* array of resource objects */ ],
+  "meta": {
+    "page": 1,
+    "per_page": 20,
+    "total": 143,
+    "total_pages": 8
+  }
+}
+```
+
+See [Pagination](/concepts/pagination) for how to iterate through large result sets, and [Requests & Responses](/concepts/requests-responses) for the full response shape reference.
+
+## Webhooks
+
+Because checks such as identity verifications and background screenings are processed asynchronously, the Check API uses **webhooks** to push Result updates to your server in real time. Instead of polling `GET /results/{id}` repeatedly, you register an HTTPS endpoint with `POST /webhooks` and Check will deliver a signed payload whenever a Result status changes.
+
+See the [Webhooks guide](/guides/webhooks) for registration, payload structure, and signature verification.
+
+---
+
+## Explore Further
+
+<CardGroup cols={2}>
+  <Card title="Requests & Responses" icon="arrow-right-arrow-left" href="/concepts/requests-responses">
+    Headers, HTTP methods, response envelopes, and timestamp conventions.
+  </Card>
+  <Card title="Error Handling" icon="circle-exclamation" href="/concepts/errors">
+    HTTP status codes, structured error payloads, and machine-readable error codes.
+  </Card>
+  <Card title="Pagination" icon="list-ol" href="/concepts/pagination">
+    Page through large lists of Checks and Results with query parameters.
+  </Card>
+  <Card title="Webhooks" icon="webhook" href="/guides/webhooks">
+    Receive real-time notifications when Results are ready.
+  </Card>
+</CardGroup>

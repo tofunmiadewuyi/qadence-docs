@@ -1,47 +1,123 @@
 ---
-title: "Quickstart"
-description: "Begin with a guide on the fastest path to a successful outcome"
+title: "Get Started with the Check API in Minutes"
+sidebarTitle: "Quickstart"
+description: "Authenticate, list your checks, and create your first check via the Check REST API — all in under five minutes with just curl."
 ---
 
-Describe how someone begins using your product. What is the first thing they need to do? Are there any prerequisites?
-
-A quickstart should take someone from zero to using your product. They'll get a quick win and a sense of what they can accomplish.
+This quickstart guide walks you through everything you need to send your first successful request to the Check API. By the end, you'll have authenticated with your API key, retrieved a list of checks, and created a new check — giving you a working foundation to build on.
 
 ## Prerequisites
 
-Before you begin, you must have:
+Before you begin, make sure you have:
 
-- Requirement one (for example, Node.js 18+, a free account, an API key)
-- Requirement two (for example, a compatible device, a compatible browser, a compatible operating system)
-
-## Get started
-
-<Steps>
-  <Step title="Install">
-    Describe how to install your product or sign up.
-
-    ```bash
-    npm install your-package
-    ```
-  </Step>
-  <Step title="Configure">
-    Describe any setup or configuration needed before first use.
-
-    ```bash
-    your-cli init
-    ```
-  </Step>
-  <Step title="Run it">
-    Show the first thing a user does to see it working.
-
-    ```bash
-    your-cli start
-    ```
-  </Step>
-</Steps>
+- **A Check account** — sign up at [wearecheck.com](https://wearecheck.com) if you don't have one.
+- **An API key** — you'll generate this in Step 1.
+- **curl or a REST client** — the examples below use curl, but any HTTP client works.
 
 <Tip>
-  Give people a way to get help. This could be a link to a support page, a chat with a customer support agent, or a forum for your product.
-
-  Example: Need help? Reach out to us at [support@yourcompany.com](mailto:support@yourcompany.com).
+  You can use tools like [Postman](https://postman.com) or [Insomnia](https://insomnia.rest) as drop-in alternatives to curl if you prefer a GUI.
 </Tip>
+
+## Steps
+
+<Steps>
+  <Step title="Obtain Your API Key">
+    Your API key authenticates every request you make to the Check API. To get yours:
+
+    1. Log in to the [Check dashboard](https://wearecheck.com).
+    2. Navigate to **Settings** in the left sidebar.
+    3. Select **API Keys**.
+    4. Click **Generate New Key**, give it a descriptive name (e.g. `my-integration-dev`), and click **Create**.
+    5. Copy the key immediately — it won't be shown again after you close the dialog.
+
+    <Tip>
+      Store your API key in a password manager or a secrets manager like AWS Secrets Manager or HashiCorp Vault. Never paste it directly into source code or commit it to a repository.
+    </Tip>
+
+    Your key will look like this:
+
+    ```
+    ck_live_xxxxxxxxxxxxxxxxxxxx
+    ```
+  </Step>
+
+  <Step title="Make Your First Request">
+    With your API key in hand, call `GET /checks` to retrieve your existing checks and confirm your credentials are working.
+
+    ```bash
+    curl https://api.wearecheck.com/v1/checks \
+      -H "Authorization: Bearer YOUR_API_KEY"
+    ```
+
+    A successful response returns a paginated list of your checks:
+
+    ```json
+    {
+      "data": [
+        {
+          "id": "chk_01HXYZ123",
+          "name": "Identity Verification",
+          "status": "active",
+          "created_at": "2024-01-15T10:30:00Z"
+        }
+      ],
+      "meta": {
+        "page": 1,
+        "per_page": 20,
+        "total": 1
+      }
+    }
+    ```
+
+    If your account is brand new, the `data` array will be empty — that's expected. If you receive a `401 Unauthorized` response, double-check that you've replaced `YOUR_API_KEY` with your actual key and that it hasn't been revoked.
+  </Step>
+
+  <Step title="Create Your First Check">
+    Now create a new check by sending a `POST` request to `/checks` with a JSON body describing it.
+
+    ```bash
+    curl https://api.wearecheck.com/v1/checks \
+      -X POST \
+      -H "Authorization: Bearer YOUR_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "name": "My First Check",
+        "status": "active"
+      }'
+    ```
+
+    A successful creation returns `201 Created` with the full check object:
+
+    ```json
+    {
+      "data": {
+        "id": "chk_01HABC456",
+        "name": "My First Check",
+        "status": "active",
+        "created_at": "2024-01-15T11:00:00Z"
+      }
+    }
+    ```
+
+    Save the `id` from the response — you'll use it to retrieve or reference this check later via `GET /checks/{id}`.
+  </Step>
+
+  <Step title="Next Steps">
+    You're up and running. Here's where to go from here:
+
+    <CardGroup cols={2}>
+      <Card title="Authentication" icon="key" href="/authentication">
+        Learn the full authentication model, key scopes, and how to handle auth errors.
+      </Card>
+      <Card title="Core Concepts" icon="book-open" href="/concepts/overview">
+        Understand checks, results, and how they relate before you build deeper.
+      </Card>
+      <Card title="Webhooks Guide" icon="webhook" href="/guides/webhooks">
+        Set up real-time notifications so your system reacts the moment a result is ready.
+      </Card>
+      <Card title="API Reference" icon="code" href="/api-reference/overview">
+        Browse every endpoint with full parameter and response documentation.
+      </Card>
+    </CardGroup>
+  </Step>
+</Steps>
