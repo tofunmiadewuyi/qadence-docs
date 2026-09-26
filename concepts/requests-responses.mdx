@@ -1,7 +1,7 @@
 ---
-title: "Check API Request and Response Format"
+title: "Check API Requests: Headers, Methods, and Responses"
 sidebarTitle: "Requests & Responses"
-description: "Understand the headers, HTTP methods, JSON envelope, and timestamp conventions required for every Check API request and response."
+description: "Understand the required headers, HTTP methods, JSON envelope structure, and timestamp format for every Check API request and response."
 ---
 
 Every interaction with the Check API follows a consistent contract: authenticated HTTPS requests with JSON bodies, and JSON responses wrapped in a predictable envelope. This page covers everything you need to know to construct valid requests and reliably parse responses — from required headers and supported HTTP methods through to how timestamps are formatted.
@@ -22,7 +22,7 @@ Every request must include an `Authorization` header carrying your API key as a 
 Authorization: Bearer YOUR_API_KEY
 ```
 
-For requests that send a body — `POST` and `PATCH` — you must also include:
+For requests that send a body — `POST` requests — you must also include:
 
 ```http
 Content-Type: application/json
@@ -144,10 +144,9 @@ The Check API uses standard HTTP verbs with consistent semantics across all endp
 |---|---|---|
 | `GET` | Retrieve a resource or list of resources | `GET /checks`, `GET /checks/{id}` |
 | `POST` | Create a new resource | `POST /checks`, `POST /webhooks` |
-| `PATCH` | Partially update an existing resource | `PATCH /checks/{id}` |
 | `DELETE` | Remove a resource | `DELETE /webhooks/{id}` |
 
-`GET` and `DELETE` requests must not include a request body. `POST` and `PATCH` requests must include a valid JSON body.
+`GET` and `DELETE` requests must not include a request body. `POST` requests must include a valid JSON body.
 
 ## Timestamps
 

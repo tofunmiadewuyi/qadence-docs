@@ -1,5 +1,5 @@
 ---
-title: "Receive Real-Time Events with Check Webhooks"
+title: "Setting Up and Verifying Check Webhooks for Real-Time Events"
 sidebarTitle: "Webhooks"
 description: "Configure Check webhooks to receive instant HTTP notifications when check results are ready or check statuses change in your account."
 ---
@@ -123,16 +123,16 @@ After 5 failed attempts, Check marks the delivery as permanently failed and stop
 
 ## Managing Webhooks
 
-List all registered webhook endpoints on your account:
+Send a `GET` request to `/webhooks` to list all registered endpoints on your account:
 
-```bash
+```bash curl
 curl https://api.wearecheck.com/v1/webhooks \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
 Remove a webhook endpoint by its ID:
 
-```bash
+```bash curl
 curl -X DELETE https://api.wearecheck.com/v1/webhooks/wh_01HDEF012 \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```

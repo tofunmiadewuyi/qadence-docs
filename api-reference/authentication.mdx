@@ -1,7 +1,7 @@
 ---
-title: "Check API Authentication Reference"
+title: "Authenticating Check API Requests with Bearer Tokens"
 sidebarTitle: "Authentication"
-description: "Learn how to authenticate Check API requests using Bearer tokens, manage test and live keys, and handle auth errors correctly."
+description: "Learn how to authenticate every Check API request using Bearer tokens, understand ck_live_ and ck_test_ key prefixes, and handle 401 and 403 errors."
 ---
 
 All requests to the Check API must be authenticated using an API key passed as a Bearer token in the `Authorization` header. You can find and manage your API keys from the Check dashboard. Requests made without a valid key will be rejected with a `401 Unauthorized` response.

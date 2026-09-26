@@ -1,7 +1,7 @@
 ---
-title: "Checks API Endpoints Reference"
+title: "Checks Endpoints: Create, List, and Retrieve Definitions"
 sidebarTitle: "Checks"
-description: "Create, list, and retrieve check definitions via the Check API. Covers all request parameters, response fields, and examples."
+description: "Use the Check API to create new check definitions, list all checks in your account, and retrieve a specific check by ID. Includes parameters and examples."
 ---
 
 The Checks resource lets you create and manage check definitions — the templates that describe the type of verification you want to perform. You can create checks of different types (background, identity, or credit), list all checks in your account, and retrieve a specific check by its ID. Results are generated separately when a check is run; see the [Results reference](/api-reference/endpoints/results) for details.
@@ -9,6 +9,8 @@ The Checks resource lets you create and manage check definitions — the templat
 ---
 
 ## List all checks
+
+Returns a paginated list of all checks in your account, ordered by creation date descending.
 
 <ParamField query="page" type="integer">
   The page number to return. Defaults to `1`.
@@ -21,8 +23,6 @@ The Checks resource lets you create and manage check definitions — the templat
 <ParamField query="status" type="string">
   Filter checks by status. Accepted values: `active`, `archived`.
 </ParamField>
-
-Returns a paginated list of all checks in your account, ordered by creation date descending.
 
 ```bash curl
 curl https://api.wearecheck.com/v1/checks?page=1&per_page=20 \
@@ -100,6 +100,8 @@ curl https://api.wearecheck.com/v1/checks?page=1&per_page=20 \
 
 ## Create a check
 
+Creates a new check definition. Once created, the check can be run to produce results.
+
 <ParamField body="name" type="string" required>
   A human-readable name for the check. Used to identify it in the dashboard and API responses.
 </ParamField>
@@ -111,8 +113,6 @@ curl https://api.wearecheck.com/v1/checks?page=1&per_page=20 \
 <ParamField body="description" type="string">
   An optional free-text description of what this check is used for.
 </ParamField>
-
-Creates a new check definition. Once created, the check can be run to produce results.
 
 ```bash curl
 curl -X POST https://api.wearecheck.com/v1/checks \
@@ -145,11 +145,11 @@ curl -X POST https://api.wearecheck.com/v1/checks \
 
 ## Get a check
 
+Retrieves a single check by its ID.
+
 <ParamField path="id" type="string" required>
   The unique identifier of the check to retrieve. Must be prefixed with `chk_`.
 </ParamField>
-
-Retrieves a single check by its ID.
 
 ```bash curl
 curl https://api.wearecheck.com/v1/checks/chk_01HXYZ123 \

@@ -1,7 +1,7 @@
 ---
-title: "Results API Endpoints Reference"
+title: "Results Endpoints: List and Retrieve Check Outcomes by ID"
 sidebarTitle: "Results"
-description: "List and retrieve check results via the Check API. Filter by check ID or status to query verdicts, flags, and completion times."
+description: "Query check results via the Check API. Filter by check ID or status to retrieve verdicts, flags, and completion timestamps. Results are read-only."
 ---
 
 Results represent the outcome of running a check. Each result is linked to a check and carries a status — `pending`, `pass`, or `fail` — along with a structured data payload containing a summary and any raised flags. Results are read-only: they are created automatically by the Check platform when a check is run, and cannot be created or modified via the API. Use the endpoints below to query and retrieve them.
@@ -9,6 +9,8 @@ Results represent the outcome of running a check. Each result is linked to a che
 ---
 
 ## List all results
+
+Returns a paginated list of results, ordered by creation date descending. Use `check_id` to scope results to a single check.
 
 <ParamField query="page" type="integer">
   The page number to return. Defaults to `1`.
@@ -25,8 +27,6 @@ Results represent the outcome of running a check. Each result is linked to a che
 <ParamField query="status" type="string">
   Filter results by status. Accepted values: `pending`, `pass`, `fail`.
 </ParamField>
-
-Returns a paginated list of results, ordered by creation date descending. Use `check_id` to scope results to a single check.
 
 ```bash curl
 curl "https://api.wearecheck.com/v1/results?check_id=chk_01HXYZ123&status=pass" \
@@ -112,11 +112,11 @@ curl "https://api.wearecheck.com/v1/results?check_id=chk_01HXYZ123&status=pass" 
 
 ## Get a result
 
+Retrieves a single result by its ID, including the full data payload and completion timestamp.
+
 <ParamField path="id" type="string" required>
   The unique identifier of the result to retrieve. Must be prefixed with `res_`.
 </ParamField>
-
-Retrieves a single result by its ID, including the full data payload and completion timestamp.
 
 ```bash curl
 curl https://api.wearecheck.com/v1/results/res_01HXYZ789 \

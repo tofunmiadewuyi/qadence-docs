@@ -1,7 +1,7 @@
 ---
-title: "Paginate Through Check API List Responses"
+title: "Check API Pagination: Iterating Through List Results"
 sidebarTitle: "Pagination"
-description: "All Check API list endpoints use page-based pagination — learn the query parameters, meta fields, and patterns for iterating through large datasets."
+description: "All Check API list endpoints use page-based pagination — learn the query parameters, meta fields, and ready-to-run patterns for iterating large datasets."
 ---
 
 Every list endpoint in the Check API — including `GET /checks` and `GET /results` — returns results in pages rather than all at once. This keeps individual responses fast and predictable regardless of how many records your account has accumulated. This page explains the available pagination parameters, the `meta` block returned with every list response, and ready-to-run examples for iterating through an entire dataset.

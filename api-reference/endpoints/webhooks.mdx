@@ -1,7 +1,7 @@
 ---
-title: "Webhooks API Endpoints Reference"
+title: "Webhooks Endpoints: Register, List, and Delete Endpoints"
 sidebarTitle: "Webhooks"
-description: "Register, list, and delete webhook endpoints via the Check API to receive real-time event notifications for checks and results."
+description: "Register webhook endpoints to receive real-time Check event notifications, list your active endpoints, and delete them when no longer needed."
 ---
 
 Webhooks let you receive real-time event notifications from Check delivered directly to your server. Manage your webhook endpoints via the API — register a URL to start receiving events, list your existing endpoints, or delete one to stop delivery. When an event occurs (such as a result completing), Check sends an HTTP `POST` request with a JSON payload to each registered URL that is subscribed to that event type.
@@ -9,6 +9,8 @@ Webhooks let you receive real-time event notifications from Check delivered dire
 ---
 
 ## Register a webhook
+
+Registers a new webhook endpoint. On success, the response includes a `secret` — a signing key you can use to verify that incoming webhook requests genuinely originate from Check.
 
 <ParamField body="url" type="string" required>
   The HTTPS URL where Check will deliver event payloads. Must use `https://`.
@@ -21,8 +23,6 @@ Webhooks let you receive real-time event notifications from Check delivered dire
   - `result.created` — fired when a new result is created
   - `result.completed` — fired when a result reaches a terminal state (`pass` or `fail`)
 </ParamField>
-
-Registers a new webhook endpoint. On success, the response includes a `secret` — a signing key you can use to verify that incoming webhook requests genuinely originate from Check.
 
 ```bash curl
 curl -X POST https://api.wearecheck.com/v1/webhooks \
@@ -123,11 +123,11 @@ curl https://api.wearecheck.com/v1/webhooks \
 
 ## Delete a webhook
 
+Permanently deletes a registered webhook endpoint. Returns `204 No Content` on success with no response body.
+
 <ParamField path="id" type="string" required>
   The unique identifier of the webhook endpoint to delete. Must be prefixed with `wh_`.
 </ParamField>
-
-Permanently deletes a registered webhook endpoint. Returns `204 No Content` on success with no response body.
 
 ```bash curl
 curl -X DELETE https://api.wearecheck.com/v1/webhooks/wh_01HXYZ999 \
